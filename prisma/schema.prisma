@@ -1,14 +1,106 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-}
-
 datasource db {
   provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  rating    Int      @default(1000) // simple skill baseline
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendance      SessionAttendance[]
+  groupMembers    GroupMember[] // ✅ add
+  matchTeams      MatchTeamMember[] // ✅ add
+  ratingSnapshots RatingSnapshot[] //change made
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  createdAt DateTime @default(now())
+
+  attendance      SessionAttendance[]
+  groups          Group[]
+  matches         Match[]
+  ratingSnapshots RatingSnapshot[]
+}
+
+model SessionAttendance {
+  sessionId String
+  playerId  String
+  present   Boolean @default(true)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player  Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, playerId])
+}
+
+model Group {
+  id        String  @id @default(cuid())
+  sessionId String
+  label     String // "A", "B", "C", "D"
+  locked    Boolean @default(false)
+
+  session Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  members GroupMember[]
+}
+
+model GroupMember {
+  groupId  String
+  playerId String
+
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, playerId])
+}
+
+model Match {
+  id          String    @id @default(cuid())
+  sessionId   String
+  round       Int
+  score1      Int?
+  score2      Int?
+  finalizedAt DateTime? //new add
+
+  session Session           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  members MatchTeamMember[] // ✅ one list
+
+  createdAt DateTime @default(now())
+}
+
+model MatchTeamMember {
+  matchId  String
+  playerId String
+  team     Int // 1 or 2
+
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([matchId, playerId])
+}
+
+model RatingSnapshot {
+  id        String   @id @default(cuid())
+  sessionId String
+  playerId  String
+  matchId   String? // optional but very useful for audit/debug
+  before    Int
+  after     Int
+  delta     Int
+  createdAt DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player  Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([playerId])
+  @@index([matchId])
 }
