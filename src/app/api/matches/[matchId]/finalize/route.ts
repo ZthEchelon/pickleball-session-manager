@@ -111,7 +111,8 @@ export async function POST(
         if (before == null) throw new Error("Missing player in transaction");
 
         const delta = deltas[playerId];
-        const after = before + delta;
+        const MIN_RATING = 100; // FLOOR VALUE FOR RATINGS
+        const after = Math.max(MIN_RATING,before + delta);
 
         return {
           sessionId: match.sessionId,
@@ -131,7 +132,8 @@ export async function POST(
         throw new Error(`Missing player in transaction: ${playerId}`);
       }
       const delta = deltas[playerId];
-      const after = before + delta;
+      const MIN_RATING = 100; // FLOOR VALUE FOR RATINGS
+      const after = Math.max(MIN_RATING, before + delta);
 
       await tx.player.update({
         where: { id: playerId },

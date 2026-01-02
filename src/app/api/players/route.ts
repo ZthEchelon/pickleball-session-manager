@@ -7,12 +7,18 @@ const CreatePlayerSchema = z.object({
   rating: z.number().int().min(0).max(4000).optional(),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const includeInactive = searchParams.get("includeInactive") === "true";
+
   const players = await prisma.player.findMany({
+    where: includeInactive ? undefined : { active: true },
     orderBy: { createdAt: "desc" },
   });
+
   return NextResponse.json(players);
 }
+
 
 export async function POST(req: Request) {
   const body = await req.json();

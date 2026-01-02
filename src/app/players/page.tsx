@@ -6,6 +6,7 @@ type Player = {
   id: string;
   name: string;
   rating: number;
+  active: boolean;
   createdAt: string;
 };
 
@@ -14,16 +15,41 @@ export default function PlayersPage() {
   const [name, setName] = useState("");
   const [rating, setRating] = useState<string>("1000");
   const [loading, setLoading] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
-  async function load() {
-    const res = await fetch("/api/players");
+  async function load(nextShowInactive = showInactive) {
+    const qs = nextShowInactive ? "?includeInactive=true" : "";
+    const res = await fetch(`/api/players${qs}`, { cache: "no-store" });
     const data = await res.json();
     setPlayers(data);
   }
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // generic setter to activate or deactivate player
+  async function setPlayerActive(id: string, active: boolean) {
+  setLoading(true);
+  try {
+    const res = await fetch(`/api/players/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error ?? "Failed to update player");
+      return;
+    }
+
+    await load();
+  } finally {
+    setLoading(false);
+  }
+}
 
   async function addPlayer(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +65,7 @@ export default function PlayersPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         alert(err?.error ?? "Failed to create player");
         return;
       }
@@ -80,17 +106,59 @@ export default function PlayersPage() {
         </button>
       </form>
 
-      <div className="mt-8 rounded-md border">
-        <div className="grid grid-cols-3 gap-2 border-b px-3 py-2 text-sm font-medium">
+      <label className="mt-4 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={showInactive}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setShowInactive(next);
+            load(next);
+          }}
+        />
+        Show inactive players
+      </label>
+
+      <div className="mt-4 rounded-md border">
+        <div className="grid grid-cols-4 gap-2 border-b px-3 py-2 text-sm font-medium">
           <div>Name</div>
           <div>Rating</div>
           <div>Created</div>
+          <div className="text-right">Action</div>
         </div>
+
         {players.map((p) => (
-          <div key={p.id} className="grid grid-cols-3 gap-2 px-3 py-2 text-sm">
-            <div>{p.name}</div>
-            <div>{p.rating}</div>
-            <div>{new Date(p.createdAt).toLocaleDateString()}</div>
+          <div
+            key={p.id}
+            className="grid grid-cols-4 items-center gap-2 px-3 py-2 text-sm"
+          >
+            <div className={p.active ? "" : "opacity-50"}>{p.name}</div>
+            <div className={p.active ? "" : "opacity-50"}>{p.rating}</div>
+            <div className={p.active ? "" : "opacity-50"}>
+              {new Date(p.createdAt).toLocaleDateString()}
+            </div>
+
+            <div className="flex justify-end">
+              {p.active ? (
+
+                //added restore feature
+                <button
+                  className="rounded-md border px-2 py-1 text-xs disabled:opacity-50"
+                  onClick={() => setPlayerActive(p.id, false)}
+                  disabled={loading}
+                >
+                  Deactivate
+                </button>
+              ) : (
+                <button
+                className="rounded-md border px-2 py-1 text-xs disabled:opacity-50"
+                onClick={() => setPlayerActive(p.id, true)}
+                disabled = {loading}
+                >
+                  Restore
+                </button>
+              )}
+            </div>
           </div>
         ))}
         {players.length === 0 && (
