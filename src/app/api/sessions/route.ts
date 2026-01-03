@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const CreateSessionSchema = z.object({
+  name: z.string().min(1, "Session name is required"),
   date: z.coerce.date(), // accepts "2026-01-02"
 });
 
@@ -24,11 +25,15 @@ export async function POST(req: Request) {
     );
   }
 
+  // Normalize date to midnight
   const d = new Date(parsed.data.date);
   d.setHours(0, 0, 0, 0);
 
   const session = await prisma.session.create({
-    data: { date: d },
+    data: {
+      name: parsed.data.name.trim(),
+      date: d,
+    },
   });
 
   return NextResponse.json(session, { status: 201 });
