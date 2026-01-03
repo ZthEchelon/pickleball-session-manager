@@ -5,6 +5,12 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+{
+  "scripts": {
+    "build": "prisma generate && next build"
+  }
+}
+
 
 model Player {
   id        String   @id @default(cuid())
