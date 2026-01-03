@@ -1,8 +1,3 @@
-Absolutely — here’s a **clean, professional README** you can drop straight into your repo.
-It’s written to read well for **recruiters / interviewers (Bloomberg-level)** without overhyping.
-
----
-
 # 🏓 Pickleball Session Manager
 
 A web application for managing pickleball sessions, players, balanced groups, matches, and rating changes.
