@@ -15,9 +15,13 @@ export default function SessionsPage() {
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive">(
+    "active"
+  );
 
-  async function load() {
-    const res = await fetch("/api/sessions", { cache: "no-store" });
+  async function load(nextFilter = statusFilter) {
+    const qs = `?active=${nextFilter === "active"}`;
+    const res = await fetch(`/api/sessions${qs}`, { cache: "no-store" });
     setSessions(await res.json());
   }
 
@@ -98,6 +102,22 @@ export default function SessionsPage() {
           {loading ? "Creating..." : "Create"}
         </button>
       </form>
+
+      <label className="mt-4 flex items-center gap-2 text-sm">
+        <span>Status</span>
+        <select
+          className="rounded-md border px-2 py-1 text-sm"
+          value={statusFilter}
+          onChange={(e) => {
+            const next = e.target.value as "active" | "inactive";
+            setStatusFilter(next);
+            load(next);
+          }}
+        >
+          <option value="active">Active sessions</option>
+          <option value="inactive">Inactive sessions</option>
+        </select>
+      </label>
 
       <div className="mt-6 rounded-md border">
         <div className="grid grid-cols-4 gap-2 border-b px-3 py-2 text-sm font-medium">

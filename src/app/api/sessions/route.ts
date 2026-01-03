@@ -7,10 +7,17 @@ const CreateSessionSchema = z.object({
   date: z.coerce.date(), // accepts "2026-01-02"
 });
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const activeParam = searchParams.get("active");
+  const activeFilter =
+    activeParam === "true" ? true : activeParam === "false" ? false : undefined;
+
   const sessions = await prisma.session.findMany({
+    where: typeof activeFilter === "boolean" ? { active: activeFilter } : undefined,
     orderBy: { date: "desc" },
   });
+
   return NextResponse.json(sessions);
 }
 
