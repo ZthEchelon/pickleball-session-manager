@@ -23,8 +23,9 @@ model Player {
 
 model Session {
   id        String   @id @default(cuid())
-  name String //naming sessions
+  name      String //naming sessions
   date      DateTime @unique
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
   attendance      SessionAttendance[]
