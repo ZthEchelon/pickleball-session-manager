@@ -23,6 +23,7 @@ model Player {
 
 model Session {
   id        String   @id @default(cuid())
+  name String //naming sessions
   date      DateTime @unique
   createdAt DateTime @default(now())
 
