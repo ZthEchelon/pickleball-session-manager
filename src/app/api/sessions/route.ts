@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const CreateSessionSchema = z.object({
+  name: z.string().min(1, "Session name is required"),
   date: z.coerce.date(), // accepts "2026-01-02"
 });
 
@@ -15,21 +16,6 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const body = await req.json();
-
-  if (!body?.name?.trim()) {
-    return NextResponse.json(
-      { error: "Session name is required" },
-      { status: 400 }
-    );
-  }
-
-  const session = await prisma.session.create({
-    data: {
-      name: body.name.trim(),
-      date: new Date(body.date),
-    },
-  });
-
   const parsed = CreateSessionSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -39,11 +25,15 @@ export async function POST(req: Request) {
     );
   }
 
+  // Normalize date to midnight
   const d = new Date(parsed.data.date);
   d.setHours(0, 0, 0, 0);
 
   const session = await prisma.session.create({
-    data: { date: d },
+    data: {
+      name: parsed.data.name.trim(),
+      date: d,
+    },
   });
 
   return NextResponse.json(session, { status: 201 });
