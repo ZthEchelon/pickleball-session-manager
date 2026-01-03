@@ -11,6 +11,8 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
+
 
   async function load() {
     const res = await fetch("/api/sessions", { cache: "no-store" });
@@ -52,6 +54,13 @@ export default function SessionsPage() {
       </p>
 
       <form onSubmit={createSession} className="mt-6 flex gap-2">
+        <input
+          className="w-full rounded-md border px-3 py-2"
+          placeholder="Session name (e.g. Tuesday Night Ladder)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+
         <input
           className="w-full rounded-md border px-3 py-2"
           type="date"
