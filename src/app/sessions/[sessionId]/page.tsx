@@ -13,6 +13,7 @@ type Row = {
 
 type Session = {
   id: string;
+  name: string;
   date: string;
 };
 
