@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { snakeDraftGroups } from "@/lib/grouping";
+import { groupByRatingBands } from "@/lib/grouping";
 
 //added for group end to end wiring
 
@@ -78,7 +78,7 @@ export async function POST(
     );
   }
 
-  const groups = snakeDraftGroups(presentPlayers, parsed.data.groupCount);
+  const groups = groupByRatingBands(presentPlayers, parsed.data.groupCount);
 
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Clear old groups for this session

@@ -4,7 +4,7 @@ export type RatedPlayer = {
   rating: number;
 };
 
-export function snakeDraftGroups(players: RatedPlayer[], groupCount: number) {
+export function groupByRatingBands(players: RatedPlayer[], groupCount: number) {
   if (!Number.isInteger(groupCount) || groupCount < 2) {
     throw new Error("groupCount must be an integer >= 2");
   }
@@ -12,20 +12,24 @@ export function snakeDraftGroups(players: RatedPlayer[], groupCount: number) {
     throw new Error("Not enough players to form groups");
   }
 
-  // Highest rating first
+  // best -> worst
   const sorted = [...players].sort((a, b) => b.rating - a.rating);
 
-  const groups: RatedPlayer[][] = Array.from({ length: groupCount }, () => []);
+  const n = sorted.length;
+  const base = Math.floor(n / groupCount);
+  const rem = n % groupCount;
 
-  for (let i = 0; i < sorted.length; i++) {
-    const round = Math.floor(i / groupCount);
-    const indexInRound = i % groupCount;
+  // First `rem` groups get one extra player
+  const sizes = Array.from({ length: groupCount }, (_, i) =>
+    i < rem ? base + 1 : base
+  );
 
-    // Even rounds go left->right, odd rounds right->left
-    const groupIndex =
-      round % 2 === 0 ? indexInRound : groupCount - 1 - indexInRound;
+  const groups: RatedPlayer[][] = [];
+  let idx = 0;
 
-    groups[groupIndex].push(sorted[i]);
+  for (const size of sizes) {
+    groups.push(sorted.slice(idx, idx + size));
+    idx += size;
   }
 
   return groups;

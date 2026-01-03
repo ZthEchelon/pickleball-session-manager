@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -29,22 +30,21 @@ type Group = {
   }[];
 };
 
+//changed matched maember
+type MatchMember = {
+  team: number;
+  player: { id: string; name: string; rating: number };
+};
+
 type Match = {
   id: string;
-  round: number;
   score1: number | null;
   score2: number | null;
   finalizedAt: string | null;
-  members: {
-    playerId: string;
-    team: number;
-    player: {
-      id: string;
-      name: string;
-      rating: number;
-    };
-  }[];
+  round: number;
+  members: MatchMember[];
 };
+
 
 export default function SessionDetailPage() {
   const params = useParams<{ sessionId: string }>();
@@ -77,6 +77,39 @@ export default function SessionDetailPage() {
     setSession(data.session);
     setRows(data.rows);
   }
+
+  //edit new functions
+
+  async function saveScores(matchId: string, score1: number, score2: number) {
+  const res = await fetch(`/api/matches/${matchId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ score1, score2 }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert(err?.error ?? "Failed to save scores");
+    return false;
+  }
+  return true;
+}
+
+  async function finalizeMatch(matchId: string) {
+    const res = await fetch(`/api/matches/${matchId}/finalize`, {
+      method: "POST",
+    });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert(err?.error ?? "Failed to finalize match");
+    return false;
+  }
+  return true;
+}
+
+//end of new functions
+
 
   async function loadGroups() {
     const res = await fetch(`/api/sessions/${sessionId}/groups`, {
@@ -276,6 +309,8 @@ export default function SessionDetailPage() {
         </>
       )}
 
+
+
       {/* Matches Display */}
       {matches.length > 0 && (
         <div className="mt-8">
@@ -305,10 +340,117 @@ export default function SessionDetailPage() {
         </div>
       )}
 
+      {/* render matches with input*/}
+
+      {matches.length > 0 && (
+  <div className="mt-8 rounded-md border">
+    <div className="border-b px-3 py-2 text-sm font-medium">Matches</div>
+
+    {matches.map((m) => {
+      const team1 = m.members.filter((x) => x.team === 1);
+      const team2 = m.members.filter((x) => x.team === 2);
+
+      const locked = Boolean(m.finalizedAt);
+
+      return (
+        <div key={m.id} className="border-b px-3 py-3 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1">
+              <div className="font-medium">
+                {team1.map((p) => p.player.name).join(" & ")}{" "}
+                <span className="text-muted-foreground">vs</span>{" "}
+                {team2.map((p) => p.player.name).join(" & ")}
+              </div>
+
+              {locked && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Finalized ✅
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                className="w-16 rounded-md border px-2 py-1 text-sm"
+                type="number"
+                min={0}
+                max={99}
+                defaultValue={m.score1 ?? ""}
+                disabled={locked || loading}
+                onChange={(e) => {
+                  const v = e.target.value === "" ? null : Number(e.target.value);
+                  setMatches((prev) =>
+                    prev.map((x) => (x.id === m.id ? { ...x, score1: v } : x))
+                  );
+                }}
+              />
+              <span className="text-muted-foreground">-</span>
+              <input
+                className="w-16 rounded-md border px-2 py-1 text-sm"
+                type="number"
+                min={0}
+                max={99}
+                defaultValue={m.score2 ?? ""}
+                disabled={locked || loading}
+                onChange={(e) => {
+                  const v = e.target.value === "" ? null : Number(e.target.value);
+                  setMatches((prev) =>
+                    prev.map((x) => (x.id === m.id ? { ...x, score2: v } : x))
+                  );
+                }}
+              />
+
+              <button
+                className="rounded-md border px-3 py-1 text-sm disabled:opacity-50"
+                disabled={locked || loading || m.score1 == null || m.score2 == null}
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const ok = await saveScores(m.id, m.score1!, m.score2!);
+                    if (ok) await loadMatches();
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                Save
+              </button>
+
+              <button
+                className="rounded-md border px-3 py-1 text-sm disabled:opacity-50"
+                disabled={locked || loading || m.score1 == null || m.score2 == null}
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    // ensure scores are saved before finalize
+                    const saved = await saveScores(m.id, m.score1!, m.score2!);
+                    if (!saved) return;
+
+                    const ok = await finalizeMatch(m.id);
+                    if (ok) {
+                      await loadMatches();
+                      // optional: refresh attendance/groups too if you show ratings/live changes elsewhere
+                    }
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                Finalize
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
+
+
       <div className="mt-6">
-        <a href="/sessions" className="text-sm underline">
+        <Link href="/sessions" className="text-sm underline">
           ← Back to sessions
-        </a>
+        </Link>
       </div>
     </main>
   );
