@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { calculateDoublesEloUpdate } from "@/lib/ratings";
 
 export async function POST(
@@ -77,7 +78,7 @@ export async function POST(
   // 4) Apply updates in a single transaction
   const playerIds = Object.keys(deltas);
 //editted this
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 
     // ✅ Atomically finalize (prevents double-apply even under race)
   const updated = await tx.match.updateMany({
