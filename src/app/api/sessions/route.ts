@@ -15,6 +15,21 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const body = await req.json();
+
+  if (!body?.name?.trim()) {
+    return NextResponse.json(
+      { error: "Session name is required" },
+      { status: 400 }
+    );
+  }
+
+  const session = await prisma.session.create({
+    data: {
+      name: body.name.trim(),
+      date: new Date(body.date),
+    },
+  });
+
   const parsed = CreateSessionSchema.safeParse(body);
 
   if (!parsed.success) {
