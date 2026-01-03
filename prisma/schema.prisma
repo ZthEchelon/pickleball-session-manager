@@ -9,7 +9,7 @@ generator client {
 
 model Player {
   id        String   @id @default(cuid())
-  name      String?
+  name      String
   rating    Int      @default(1000) // simple skill baseline
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
